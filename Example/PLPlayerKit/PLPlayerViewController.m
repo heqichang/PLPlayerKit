@@ -103,8 +103,17 @@ UITextViewDelegate
     
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
     
-    PLPlayerOption *option = [PLPlayerOption defaultOption];
-    [option setOptionValue:@10 forKey:PLPlayerOptionKeyTimeoutIntervalForMediaPackets];
+//    PLPlayerOption *option = [PLPlayerOption defaultOption];
+//    [option setOptionValue:@10 forKey:PLPlayerOptionKeyTimeoutIntervalForMediaPackets];
+
+    NSURL *url = [[[NSFileManager defaultManager] URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask] lastObject];
+    NSString *path = [[url URLByAppendingPathComponent:@"downloadForSave"] path];
+    
+    PLPlayerOption *option = [PLPlayerOption optionWithDictionary:@{PLPlayerOptionKeyLogLevel: [NSNumber numberWithUnsignedInteger:kPLLogError],
+                                                                    PLPlayerOptionKeyVideoCacheFolderPath: path,
+                                                                    PLPlayerOptionKeyVideoPreferFormat: [NSNumber numberWithUnsignedInteger:kPLPLAY_FORMAT_MP4],
+                                                                    PLPlayerOptionKeyTimeoutIntervalForMediaPackets: @15
+                                                                    }];
     
     self.player = [PLPlayer playerWithURL:self.URL option:option];
     self.player.delegate = self;
