@@ -10,7 +10,7 @@
 #import <PLPlayerKit/PLPlayerKit.h>
 #import "MacroDefines.h"
 
-#define enableBackgroundPlay    1
+#define enableBackgroundPlay    0
 
 static NSString *status[] = {
     @"PLPlayerStatusUnknow",
@@ -109,22 +109,45 @@ UITextViewDelegate
     NSURL *url = [[[NSFileManager defaultManager] URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask] lastObject];
     NSString *path = [[url URLByAppendingPathComponent:@"downloadForSave"] path];
     
-    PLPlayerOption *option = [PLPlayerOption optionWithDictionary:@{PLPlayerOptionKeyLogLevel: [NSNumber numberWithUnsignedInteger:kPLLogError],
-                                                                    PLPlayerOptionKeyVideoCacheFolderPath: path,
-                                                                    PLPlayerOptionKeyVideoPreferFormat: [NSNumber numberWithUnsignedInteger:kPLPLAY_FORMAT_MP4],
-                                                                    PLPlayerOptionKeyTimeoutIntervalForMediaPackets: @15
-                                                                    }];
+//    PLPlayerOption *option = [PLPlayerOption optionWithDictionary:@{PLPlayerOptionKeyLogLevel: [NSNumber numberWithUnsignedInteger:kPLLogError],
+//                                                                    PLPlayerOptionKeyVideoCacheFolderPath: path,
+//                                                                    PLPlayerOptionKeyVideoPreferFormat: [NSNumber numberWithUnsignedInteger:kPLPLAY_FORMAT_MP4],
+//                                                                    PLPlayerOptionKeyTimeoutIntervalForMediaPackets: @15
+//                                                                    }];
+    
+//    PLPlayerOption *option = [PLPlayerOption defaultOption];
+//    [option setValue:@(kPLLogError) forKey:PLPlayerOptionKeyLogLevel];
+//    [option setValue:path forKey:PLPlayerOptionKeyVideoCacheFolderPath];
+//    [option setValue:@(kPLPLAY_FORMAT_MP4) forKey:PLPlayerOptionKeyVideoPreferFormat];
+//    [option setValue:@15 forKey:PLPlayerOptionKeyTimeoutIntervalForMediaPackets];
+    
+    PLPlayerOption *option = [PLPlayerOption defaultOption];
+    [option setOptionValue:@(kPLLogError) forKey:PLPlayerOptionKeyLogLevel];
+    [option setOptionValue:path forKey:PLPlayerOptionKeyVideoCacheFolderPath];
+    [option setOptionValue:@(kPLPLAY_FORMAT_MP4) forKey:PLPlayerOptionKeyVideoPreferFormat];
+    [option setOptionValue:@(15) forKey:PLPlayerOptionKeyTimeoutIntervalForMediaPackets];
     
     self.player = [PLPlayer playerWithURL:self.URL option:option];
     self.player.delegate = self;
     self.player.delegateQueue = dispatch_get_main_queue();
-    self.player.backgroundPlayEnable = enableBackgroundPlay;
-#if !enableBackgroundPlay
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(startPlayer) name:UIApplicationWillEnterForegroundNotification object:nil];
-#endif
+    self.player.backgroundPlayEnable = NO;
+//#if !enableBackgroundPlay
+//    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(startPlayer) name:UIApplicationWillEnterForegroundNotification object:nil];
+//#endif
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+    
     [self setupUI];
     
     [self startPlayer];
+    
+    
+}
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)addActivityIndicatorView {
@@ -146,6 +169,10 @@ UITextViewDelegate
         [self.activityIndicatorView startAnimating];
     } else {
         [self.activityIndicatorView stopAnimating];
+    }
+    
+    if (PLPlayerStatusCompleted == state) {
+        [self.player seekTo:kCMTimeZero];
     }
     NSLog(@"%@", status[state]);
 }
@@ -185,6 +212,15 @@ UITextViewDelegate
         [UIApplication sharedApplication].idleTimerDisabled = NO;
         NSLog(@"%@", error);
     }
+}
+
+
+-(void)willResignActive:(NSNotification *)notification {
+    [self.player pause];
+}
+
+-(void)didBecomeActive:(NSNotification *)notification {
+    [self.player resume];
 }
 
 @end
